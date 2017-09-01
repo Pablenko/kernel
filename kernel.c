@@ -138,14 +138,47 @@ void terminal_write(const char* data, size_t size) {
 void terminal_writestring(const char* data) {
     terminal_write(data, strlen(data));
 }
- 
+
+static inline uint8_t inb(uint16_t port)
+{
+    uint8_t ret;
+    asm volatile ( "inb %1, %0"
+                   : "=a"(ret)
+                   : "Nd"(port) );
+    return ret;
+}
+
+char translate_scan_code(char scan_code)
+{
+    if(scan_code == 0x02)
+    {
+        return '1';
+    }
+    return scan_code;
+}
+
+char get_char()
+{
+    char c = 0;
+    do {
+        if(inb(0x60) != c)
+        {
+            c = inb(0x60);
+            if(c > 0)
+            {
+                return translate_scan_code(c);
+            }
+        }
+    }
+    while(1);
+}
+
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kernel_main(void) {
     terminal_initialize();
-    for(int i=0; i<26; i++)
-    {
-        terminal_writestring("Hello, kernel World!\n");
-    }
+    terminal_writestring("Hello, kernel World!\n");
+    char c = get_char();
+    terminal_putchar(c);
 }
