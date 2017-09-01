@@ -80,16 +80,56 @@ void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
     const size_t index = y * VGA_WIDTH + x;
     terminal_buffer[index] = vga_entry(c, color);
 }
- 
-void terminal_putchar(char c) {
-    terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
-    if (++terminal_column == VGA_WIDTH) {
-        terminal_column = 0;
-        if (++terminal_row == VGA_HEIGHT)
-            terminal_row = 0;
+
+void terminal_clean_row(size_t row_num)
+{
+    for(size_t i=0; i<VGA_WIDTH; i++)
+    {
+        terminal_putentryat(' ', terminal_color, i, row_num);
     }
 }
+
+void terminal_swap_rows(size_t source_row, size_t dest_row)
+{
+    size_t dest_start_pos = dest_row*VGA_WIDTH;
+    size_t source_start_pos = source_row*VGA_WIDTH;
+    for(size_t i=0; i<VGA_WIDTH; i++)
+    {
+        terminal_buffer[dest_start_pos+i] = terminal_buffer[source_start_pos+i];
+    }
+}
+
+void terminal_scrolling()
+{
+    if (++terminal_row == VGA_HEIGHT)
+    {
+        terminal_row = VGA_HEIGHT - 1;
+        for(size_t i=0; i<VGA_HEIGHT-1; i++)
+        {
+            terminal_swap_rows(i+1, i);
+        }
+        terminal_clean_row(VGA_HEIGHT-1);
+    }
+}
+
+void terminal_newline()
+{
+    terminal_column = 0;
+    terminal_scrolling();
+}
  
+void terminal_putchar(char c) {
+    if(c == '\n')
+    {
+        terminal_newline();
+        return;
+    }
+    terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
+    if (++terminal_column == VGA_WIDTH) {
+        terminal_newline();
+    }
+}
+
 void terminal_write(const char* data, size_t size) {
     for (size_t i = 0; i < size; i++)
         terminal_putchar(data[i]);
@@ -103,9 +143,9 @@ void terminal_writestring(const char* data) {
 extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kernel_main(void) {
-    /* Initialize terminal interface */
     terminal_initialize();
- 
-    /* Newline support is left as an exercise. */
-    terminal_writestring("Hello, kernel World!\n");
+    for(int i=0; i<26; i++)
+    {
+        terminal_writestring("Hello, kernel World!\n");
+    }
 }

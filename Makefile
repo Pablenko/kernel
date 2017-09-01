@@ -14,7 +14,7 @@ boot_data:
 kernel_data:
 	${TOOLCHAIN_DIR}/i686-elf-gcc -c kernel.c -o build/kernel.o ${CFLAGS}
 
-all: build_dir boot_data kernel_data
+all: clean build_dir boot_data kernel_data
 	${TOOLCHAIN_DIR}/i686-elf-gcc -T linker.ld -o build/myos.bin ${CFLAGS} ${LFLAGS} build/boot.o build/kernel.o
 
 run:
